@@ -42,14 +42,9 @@ activityData$date <- as.Date(activityData$date, "%Y-%m-%d")
 
 ```r
 groupedByDate <- group_by(activityData, date)
-stepSummary <- summarise(groupedByDate, totalSteps = sum(steps, na.rm = TRUE))
-```
-
-```
-## `summarise()` ungrouping output (override with `.groups` argument)
-```
-
-```r
+stepSummary <- summarise(groupedByDate, 
+                         totalSteps = sum(steps, na.rm = TRUE), 
+                         .groups = "keep")
 meanSteps <- mean(stepSummary$totalSteps)
 medianSteps <- median(stepSummary$totalSteps)
 hist(stepSummary$totalSteps, main = "Total steps per day", xlab = "Steps")
@@ -67,15 +62,15 @@ The median number of steps taken per day was 10395.
 
 ```r
 groupedByInterval = group_by(activityData, interval)
-stepSummary <- summarise(groupedByInterval, meanSteps = mean(steps, na.rm = TRUE))
-```
-
-```
-## `summarise()` ungrouping output (override with `.groups` argument)
-```
-
-```r
-plot(stepSummary$interval, stepSummary$meanSteps, type = "l", main = "Activity Pattern", xlab = "Time Interval", ylab = "Average Steps")
+stepSummary <- summarise(groupedByInterval, 
+                         meanSteps = mean(steps, na.rm = TRUE), 
+                         .groups = "keep")
+plot(stepSummary$interval, 
+     stepSummary$meanSteps, 
+     type = "l", 
+     main = "Activity Pattern", 
+     xlab = "Time Interval", 
+     ylab = "Average Steps")
 ```
 
 ![](PA1_template_files/figure-html/unnamed-chunk-3-1.png)<!-- -->
@@ -124,3 +119,4 @@ The mean number of steps of the imputed dataset is 10766.19. Because we imputed 
 The median of the imputed dataset is 10766.19. By imputing using the interval mean we introduced the same value into the dataset multiple times. This resulted in the median matching the mean.
 
 ## Are there differences in activity patterns between weekdays and weekends?
+

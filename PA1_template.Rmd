@@ -9,18 +9,19 @@ output:
 ## Loading and preprocessing the data
 
 ```{r}
-library(dplyr)
-library(ggplot2)
+library(tidyverse)
 
 activityData <- read.csv("activity.csv")
 activityData$date <- as.Date(activityData$date, "%Y-%m-%d")
+activityData <- tibble(activityData)
 ```
 
 ## What is mean total number of steps taken per day?
 
 ```{r}
-groupedByDate <- group_by(activityData, date)
-stepSummary <- summarise(groupedByDate, totalSteps = sum(steps, na.rm = TRUE))
+stepSummary <- activityData %>% 
+  group_by(date) %>% 
+  summarise(totalSteps = sum(steps, na.rm = TRUE), .groups = "keep")
 meanSteps <- mean(stepSummary$totalSteps)
 medianSteps <- median(stepSummary$totalSteps)
 hist(stepSummary$totalSteps, main = "Total steps per day", xlab = "Steps")
@@ -34,9 +35,15 @@ The median number of steps taken per day was `r medianSteps`.
 ## What is the average daily activity pattern?
 
 ```{r}
-groupedByInterval = group_by(activityData, interval)
-stepSummary <- summarise(groupedByInterval, meanSteps = mean(steps, na.rm = TRUE))
-plot(stepSummary$interval, stepSummary$meanSteps, type = "l", main = "Activity Pattern", xlab = "Time Interval", ylab = "Average Steps")
+stepSummary <- activityData %>%
+  group_by(interval) %>%
+  summarise(meanSteps = mean(steps, na.rm = TRUE), .groups = "keep")
+plot(stepSummary$interval, 
+     stepSummary$meanSteps, 
+     type = "l", 
+     main = "Activity Pattern", 
+     xlab = "Time Interval", 
+     ylab = "Average Steps")
 maxInterval <- stepSummary$interval[which.max(stepSummary$meanSteps)]
 ```
 The 5 minute interval with the most steps was `r maxInterval`
@@ -55,13 +62,18 @@ imputedActivityData <- activityData
 
 for(i in 1:nrow(imputedActivityData)) {
   if(is.na(imputedActivityData[i, "steps"])) {
+    missingIndex <-
+      which(stepSummary$interval == imputedActivityData$interval[i], 
+            arr.ind = TRUE)
+    
     imputedActivityData[i, "steps"] <- 
-      stepSummary$meanSteps[which(stepSummary$interval == imputedActivityData$interval[i], arr.ind = TRUE)]
+      as.integer(stepSummary$meanSteps[missingIndex])
   }
 }
 
-groupedByDate <- group_by(imputedActivityData, date)
-stepSummary <- summarise(groupedByDate, totalSteps = sum(steps, na.rm = TRUE))
+stepSummary <- imputedActivityData %>% 
+  group_by(date) %>%
+  summarise(totalSteps = sum(steps, na.rm = TRUE), .groups = "keep")
 
 meanSteps <- mean(stepSummary$totalSteps)
 medianSteps <- median(stepSummary$totalSteps)
@@ -73,5 +85,20 @@ The median of the imputed dataset is `r format(medianSteps)`. By imputing using 
 
 ## Are there differences in activity patterns between weekdays and weekends?
 ```{r}
+activityData <- activityData %>% 
+  add_column(weekday = rep("Null", times = nrow(activityData)))
+isWeekday = as.numeric(format.Date(activityData$date, "%u")) < 6
+activityData$weekday[isWeekday] <- "weekday"
+activityData$weekday[!isWeekday] <- "weekend"
+activityData$weekday <- as.factor(activityData$weekday)
 
+activityData <- activityData %>% 
+  group_by(interval, weekday) %>%
+  summarise(meanSteps = mean(steps, na.rm = TRUE), .groups = "keep")
+
+ggplot(data = activityData, aes(interval, meanSteps)) + 
+  geom_line() + 
+  facet_grid(weekday ~.)
 ```
+
+
