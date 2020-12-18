@@ -10,41 +10,39 @@ output:
 
 
 ```r
-library(dplyr)
+library(tidyverse)
 ```
 
 ```
-## 
-## Attaching package: 'dplyr'
+## -- Attaching packages --------------------------------------- tidyverse 1.3.0 --
 ```
 
 ```
-## The following objects are masked from 'package:stats':
-## 
-##     filter, lag
+## v ggplot2 3.3.2     v purrr   0.3.4
+## v tibble  3.0.4     v dplyr   1.0.2
+## v tidyr   1.1.2     v stringr 1.4.0
+## v readr   1.4.0     v forcats 0.5.0
 ```
 
 ```
-## The following objects are masked from 'package:base':
-## 
-##     intersect, setdiff, setequal, union
+## -- Conflicts ------------------------------------------ tidyverse_conflicts() --
+## x dplyr::filter() masks stats::filter()
+## x dplyr::lag()    masks stats::lag()
 ```
 
 ```r
-library(ggplot2)
-
 activityData <- read.csv("activity.csv")
 activityData$date <- as.Date(activityData$date, "%Y-%m-%d")
+activityData <- tibble(activityData)
 ```
 
 ## What is mean total number of steps taken per day?
 
 
 ```r
-groupedByDate <- group_by(activityData, date)
-stepSummary <- summarise(groupedByDate, 
-                         totalSteps = sum(steps, na.rm = TRUE), 
-                         .groups = "keep")
+stepSummary <- activityData %>% 
+  group_by(date) %>% 
+  summarise(totalSteps = sum(steps, na.rm = TRUE), .groups = "keep")
 meanSteps <- mean(stepSummary$totalSteps)
 medianSteps <- median(stepSummary$totalSteps)
 hist(stepSummary$totalSteps, main = "Total steps per day", xlab = "Steps")
@@ -61,10 +59,9 @@ The median number of steps taken per day was 10395.
 
 
 ```r
-groupedByInterval = group_by(activityData, interval)
-stepSummary <- summarise(groupedByInterval, 
-                         meanSteps = mean(steps, na.rm = TRUE), 
-                         .groups = "keep")
+stepSummary <- activityData %>%
+  group_by(interval) %>%
+  summarise(meanSteps = mean(steps, na.rm = TRUE), .groups = "keep")
 plot(stepSummary$interval, 
      stepSummary$meanSteps, 
      type = "l", 
@@ -96,27 +93,47 @@ imputedActivityData <- activityData
 
 for(i in 1:nrow(imputedActivityData)) {
   if(is.na(imputedActivityData[i, "steps"])) {
+    missingIndex <-
+      which(stepSummary$interval == imputedActivityData$interval[i], 
+            arr.ind = TRUE)
+    
     imputedActivityData[i, "steps"] <- 
-      stepSummary$meanSteps[which(stepSummary$interval == imputedActivityData$interval[i], arr.ind = TRUE)]
+      as.integer(stepSummary$meanSteps[missingIndex])
   }
 }
 
-groupedByDate <- group_by(imputedActivityData, date)
-stepSummary <- summarise(groupedByDate, totalSteps = sum(steps, na.rm = TRUE))
-```
+stepSummary <- imputedActivityData %>% 
+  group_by(date) %>%
+  summarise(totalSteps = sum(steps, na.rm = TRUE), .groups = "keep")
 
-```
-## `summarise()` ungrouping output (override with `.groups` argument)
-```
-
-```r
 meanSteps <- mean(stepSummary$totalSteps)
 medianSteps <- median(stepSummary$totalSteps)
 ```
 
-The mean number of steps of the imputed dataset is 10766.19. Because we imputed the mean based on the interval's average, not the day's average, this value is expected to be different than the previous mean. 
+The mean number of steps of the imputed data set is 10749.77. Because we imputed the mean based on the interval's average, not the day's average, this value is expected to be different than the previous mean. 
 
-The median of the imputed dataset is 10766.19. By imputing using the interval mean we introduced the same value into the dataset multiple times. This resulted in the median matching the mean.
+The median of the imputed data set is 10641. By imputing using the interval mean we introduced the same value into the data set multiple times. This resulted in a change to the median.
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+```r
+activityData <- activityData %>% 
+  add_column(weekday = rep("Null", times = nrow(activityData)))
+isWeekday = as.numeric(format.Date(activityData$date, "%u")) < 6
+activityData$weekday[isWeekday] <- "weekday"
+activityData$weekday[!isWeekday] <- "weekend"
+activityData$weekday <- as.factor(activityData$weekday)
+
+activityData <- activityData %>% 
+  group_by(interval, weekday) %>%
+  summarise(meanSteps = mean(steps, na.rm = TRUE), .groups = "keep")
+
+ggplot(data = activityData, aes(interval, meanSteps)) + 
+  geom_line() + 
+  facet_grid(weekday ~.) +
+  labs(y = "Mean Steps")
+```
+
+![](PA1_template_files/figure-html/unnamed-chunk-6-1.png)<!-- -->
+
 

@@ -79,9 +79,9 @@ meanSteps <- mean(stepSummary$totalSteps)
 medianSteps <- median(stepSummary$totalSteps)
 ```
 
-The mean number of steps of the imputed dataset is `r format(meanSteps)`. Because we imputed the mean based on the interval's average, not the day's average, this value is expected to be different than the previous mean. 
+The mean number of steps of the imputed data set is `r format(meanSteps)`. Because we imputed the mean based on the interval's average, not the day's average, this value is expected to be different than the previous mean. 
 
-The median of the imputed dataset is `r format(medianSteps)`. By imputing using the interval mean we introduced the same value into the dataset multiple times. This resulted in the median matching the mean.
+The median of the imputed data set is `r format(medianSteps)`. By imputing using the interval mean we introduced the same value into the data set multiple times. This resulted in a change to the median.
 
 ## Are there differences in activity patterns between weekdays and weekends?
 ```{r}
@@ -98,7 +98,8 @@ activityData <- activityData %>%
 
 ggplot(data = activityData, aes(interval, meanSteps)) + 
   geom_line() + 
-  facet_grid(weekday ~.)
+  facet_grid(weekday ~.) +
+  labs(y = "Mean Steps")
 ```
 
 
